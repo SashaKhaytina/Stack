@@ -1,0 +1,5 @@
+from main()::85 -- func - stack_dtor
+compacity - 0
+size - 0
+
+

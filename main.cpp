@@ -19,18 +19,30 @@
 #define IF_OK(status) if (!status) status = 
 #define ___ ,  // ... НЕ ОЧЕНЬ ...
 
-const size_t COP_START = 16; // Это вообще норм?
+#define STACK_PUSH(stack, elem)  stack_push(stack, elem, ON_DEBUG(__LINE__))
+#define STACK_POP(stack)         stack_pop(stack, ON_DEBUG(__LINE__))
 
 typedef double StackElem_t;
 
+
+const size_t COP_START = 16; // Это вообще норм?
+const int CANARY = 0xDEFE0CE;
+
+
 struct Stack
 {
+    ON_DEBUG(long long hash_stack;)  // при передаче указателя, надо передавать указатель на канарейку, а размер без sizeof(long long)
+    ON_DEBUG(long long hash_arr;)
+
+    int  left_canary =  CANARY;  // без дебага?
     StackElem_t* arr;
     size_t       size;
     size_t       compacity;
 
     ON_DEBUG(int num_str_in_main;)
     ON_DEBUG(char* name_current_func;)
+
+    int  right_canary =  CANARY; // без дебага?
 };
 
 enum ProgramStatus {
@@ -38,24 +50,33 @@ enum ProgramStatus {
     STACK_NULL, 
     STACK_ARR_NULL,
     SIZE_MORE_COMPASITY, 
-    TOO_LARGE_COMPASITY
+    TOO_LARGE_COMPASITY,
+    NO_OPENING_FILE,
+    CHANGE_RIGHT_CANARY, 
+    CHANGE_LEFT_CANARY, 
+    HASH_STACK_ERROR, 
+    HASH_ARR_ERROR
 };
 
 
 // ProgramStatus stack_ctor(Stack* stack, StackElem_t* arr, size_t size, size_t compacity);
 
-ProgramStatus default_stack_ctor(Stack* stack);
-ProgramStatus stack_assert      (Stack* stack);
-void          print_stack_info  (Stack* stack);
-void          print_error       (ProgramStatus status);
+ProgramStatus default_stack_ctor   (Stack* stack);
+ProgramStatus stack_assert         (Stack* stack);
+void          print_stack_info     (Stack* stack);
+void          file_print_stack_info(Stack* stack);
+void          print_error          (ProgramStatus status);
 
-ProgramStatus stack_dtor        (Stack* stack);
+ProgramStatus stack_dtor           (Stack* stack);
 
-ProgramStatus stack_push        (Stack* stack, StackElem_t elem ON_DEBUG(___ int num_str_in_main));
-ProgramStatus stack_pop         (Stack* stack  ON_DEBUG(___ int num_str_in_main));
+ProgramStatus stack_push           (Stack* stack, StackElem_t elem ON_DEBUG(___ int num_str_in_main));
+ProgramStatus stack_pop            (Stack* stack  ON_DEBUG(___ int num_str_in_main));
+
+long long hash_func(void* point, int size);
 
 
-// ХЕШ, вывод в файл, Unitest, warnings
+// ХЕШ, вывод в файл, Unitest, warnings, !!!!Вывод нескольких ошибок!!!!
+// ЧТО ДЕЛАТЬ В ФАЙЛОМ ??? (ГДЕ ОТКРЫВАТЬ)
 
 int main()
 {
@@ -63,23 +84,33 @@ int main()
 
     ON_DEBUG(printf("DEBUG включен!\n\n");)
 
+
     ProgramStatus status = OK; // надо ли его оборачивать в ON_DEBUG?
+
+    
+    // ON_DEBUG(FILE* file = fopen("debug.txt", "w");)       // Плохо, потому что stack_print_info вызывается не только при DEBUG
+    // ON_DEBUG(if (file == NULL) status = NO_OPENING_FILE;)
+
 
     IF_OK(status) default_stack_ctor(&stack);
 
-    IF_OK(status) stack_push(&stack, 5 ON_DEBUG(___ __LINE__));
-    IF_OK(status) stack_push(&stack, 1 ON_DEBUG(___ __LINE__));
-    IF_OK(status) stack_push(&stack, 3 ON_DEBUG(___ __LINE__));
+    IF_OK(status) STACK_PUSH(&stack, 5);
+    IF_OK(status) STACK_PUSH(&stack, 1);
+    IF_OK(status) STACK_PUSH(&stack, 3);
 
-    IF_OK(status) stack_pop(&stack ON_DEBUG(___ __LINE__));
-    IF_OK(status) stack_pop(&stack ON_DEBUG(___ __LINE__));
-    IF_OK(status) stack_pop(&stack ON_DEBUG(___ __LINE__));
-    // IF_OK(status) stack_pop(&stack ON_DEBUG(___ __LINE__)); // compacity - 2, size - 18446744073709551615 (надо проверять на адекватный размер и соответствие с compacity)
+    //stack.size--;
+    //stack.left_canary = 0xDED;
+    //stack.arr[0] = 9; 
 
-    IF_OK(status) stack_push(&stack, 5 ON_DEBUG(___ __LINE__));
-    IF_OK(status) stack_push(&stack, 1 ON_DEBUG(___ __LINE__));
-    IF_OK(status) stack_push(&stack, 3 ON_DEBUG(___ __LINE__));
-    IF_OK(status) stack_push(&stack, 10 ON_DEBUG(___ __LINE__));
+    IF_OK(status) STACK_POP(&stack);
+    IF_OK(status) STACK_POP(&stack);
+    //IF_OK(status) STACK_POP(&stack);
+    //IF_OK(status) stack_pop(&stack ON_DEBUG(___ __LINE__)); // compacity - 2, size - 18446744073709551615 (надо проверять на адекватный размер и соответствие с compacity)
+
+    IF_OK(status) STACK_PUSH(&stack, 5);
+    IF_OK(status) STACK_PUSH(&stack, 1);
+    IF_OK(status) STACK_PUSH(&stack, 3);
+    IF_OK(status) STACK_PUSH(&stack, 10);
 
 
     stack_dtor(&stack);
@@ -114,9 +145,16 @@ ProgramStatus default_stack_ctor(Stack* stack)
     stack->size      = 0;
     stack->compacity = COP_START;
     stack->arr       = (StackElem_t*) calloc(COP_START, sizeof(StackElem_t));
-       
 
-    print_stack_info(stack);
+    printf("%d - *stack\n", sizeof(Stack));
+    printf("%d - stack\n", (int*) stack);
+    printf("%d - long long\n", sizeof(long long));
+    printf("%d - hash func\n", hash_func(stack->arr, sizeof(StackElem_t) * (stack->size)));
+
+    ON_DEBUG(stack->hash_stack = hash_func(((void*) stack + sizeof(long long)), sizeof(Stack) - 2 * sizeof(long long));)
+    ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));)
+
+    // print_stack_info(stack); // тут не надо
 
     // Проверка на корректность
     return stack_assert(stack);
@@ -162,6 +200,33 @@ ProgramStatus stack_assert(Stack* stack)
         print_stack_info(stack);
         return TOO_LARGE_COMPASITY;
     }
+
+    if (stack->left_canary != CANARY)
+    {
+        print_stack_info(stack);
+        return CHANGE_LEFT_CANARY;
+    }
+
+    if (stack->right_canary != CANARY)
+    {
+        print_stack_info(stack);
+        return CHANGE_RIGHT_CANARY;
+    }
+
+    if (stack->hash_stack != hash_func(((void*) stack + sizeof(long long)), sizeof(Stack) - 2 * sizeof(long long))) // тут адекватная запись... она работает что ли?
+    {
+        printf("%d - stack->hash_stack\n", stack->hash_stack);
+        printf("%d - счет\n", hash_func(((void*) stack + sizeof(long long)), sizeof(Stack) - 2 * sizeof(long long)));
+        print_stack_info(stack);
+        return HASH_STACK_ERROR;
+    }
+
+    if (stack->hash_arr != hash_func(stack->arr, sizeof(StackElem_t) * (stack->size)))
+    {
+        print_stack_info(stack);
+        return HASH_ARR_ERROR;
+    }
+
     return OK;
 }
 
@@ -169,7 +234,11 @@ ProgramStatus stack_assert(Stack* stack)
 void print_stack_info(Stack* stack)  // это в define?.. 
 {
     ON_DEBUG(printf("from main()::%d -- func - %s\n", stack->num_str_in_main, stack->name_current_func);)
+    ON_DEBUG(printf("hash_stack - %lld\n", stack->hash_stack);)
+    ON_DEBUG(printf("hash_arr - %lld\n", stack->hash_arr);)
 
+    printf("left canary - %x\n", stack->left_canary);
+    printf("right canary - %x\n", stack->right_canary);
 
     printf("compacity - %lu\n", stack->compacity);
     printf("size - %lu\n", stack->size);
@@ -183,9 +252,42 @@ void print_stack_info(Stack* stack)  // это в define?..
 
 }
 
+// треш
+void file_print_stack_info(Stack* stack)  // выводит dtor..........
+{
+    FILE* file = fopen("debug.txt", "w");  // норм ли это делать здесь? Ведь файл может не открыться, а это потенциальная ошибка
+    if (file == NULL)
+    {
+        printf("Файл для дебага не открылся");
+        return; // эм... но возвращать у этой функции ошибку - не очень.
+    }
+
+    ON_DEBUG(fprintf(file, "from main()::%d -- func - %s\n", stack->num_str_in_main, stack->name_current_func);)
+
+    fprintf(file, "left canary - %x\n", stack->left_canary);
+    fprintf(file, "right canary - %x\n", stack->right_canary);
+
+    fprintf(file, "compacity - %lu\n", stack->compacity);
+    fprintf(file, "size - %lu\n", stack->size);
+
+    for (int i = (int) stack->size - 1; i >= 0; i--)
+    {
+        fprintf(file, "arr[%d] = %f\n", i, stack->arr[i]);
+    }
+
+    fprintf(file, "\n\n");
+
+    fclose(file); // всегда остается последняя запись
+
+}
+
+
 
 ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(___ int num_str_in_main))
 {
+    ProgramStatus stat = stack_assert(stack);
+    if (stat) return stat;
+
     ON_DEBUG(stack->num_str_in_main = num_str_in_main;)
     ON_DEBUG(stack->name_current_func = "stack_push";)
 
@@ -198,8 +300,11 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(___ int num_str
         stack->compacity *= 2;
         stack->arr = (StackElem_t*) realloc(stack->arr, stack->compacity * sizeof(StackElem_t)); // Функцию переписать!
     }
+    
+    ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));)
+    ON_DEBUG(stack->hash_stack = hash_func(((void*) stack + sizeof(long long)), sizeof(Stack) - 2*sizeof(long long));)
 
-    print_stack_info(stack);
+    print_stack_info(stack); // здесь не надо
 
     return stack_assert(stack);
 }
@@ -210,6 +315,9 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(___ int num_str
 
 ProgramStatus stack_pop(Stack* stack  ON_DEBUG(___ int num_str_in_main))
 {
+    ProgramStatus stat = stack_assert(stack);
+    if (stat) return stat;
+
     ON_DEBUG(stack->num_str_in_main = num_str_in_main;)
     ON_DEBUG(stack->name_current_func = "stack_pop";)
 
@@ -222,7 +330,10 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(___ int num_str_in_main))
         stack->arr = (StackElem_t*) realloc(stack->arr, stack->compacity * sizeof(StackElem_t)); // Функцию переписать!
     }
 
-    print_stack_info(stack);
+    ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));) // ЭТО ДОЛЖНО БЫТЬ РАНЬШЕ!!! НО ПОЧЕМУ???
+    ON_DEBUG(stack->hash_stack = hash_func(((void*) stack + sizeof(long long)), sizeof(Stack) - 2*sizeof(long long));)
+
+    print_stack_info(stack); // здесь не надо
 
     return stack_assert(stack);
 }
@@ -230,18 +341,64 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(___ int num_str_in_main))
 
 void print_error(ProgramStatus status)
 {
-    if      (status == STACK_NULL)
+    switch (status)
+    {
+    case STACK_NULL:
         PRINTF_RED("Ошибка: нулевой указатель на стек\n");
-
-    else if (status == STACK_ARR_NULL)
+        break;
+    
+    case STACK_ARR_NULL:
         PRINTF_RED("Ошибка: нулевой указатель на массив стека\n");
-
-    else if (status == SIZE_MORE_COMPASITY)
+        break;
+    
+    case SIZE_MORE_COMPASITY:
         PRINTF_RED("Ошибка: размер массива больше его максимального размера (скорее всего \"отрицательный\" size)\n");
+        break;
     
-    else if (status == TOO_LARGE_COMPASITY)
+    case TOO_LARGE_COMPASITY:
         PRINTF_RED("Ошибка: Массив превысил максимальный размер\n");
+        break;
     
-    else
+    case NO_OPENING_FILE:
+        PRINTF_RED("Ошибка: Ошибка открытия файла\n");
+        break;
+    
+    case CHANGE_LEFT_CANARY:
+        PRINTF_RED("Ошибка: Левая канарейка сдохла\n");
+        break;
+    
+    case CHANGE_RIGHT_CANARY:
+        PRINTF_RED("Ошибка: Правая канарейка сдохла\n");
+        break;
+    
+    case HASH_STACK_ERROR:
+        PRINTF_RED("Ошибка: Ошибка хэша стека\n");
+        break;
+    
+    case HASH_ARR_ERROR:
+        PRINTF_RED("Ошибка: Ошибка хэша массива\n");
+        break;
+    
+    default:
         PRINTF_GREEN("Программа завершила работу без ошибок\n");
+        break;
+    }
+}
+
+
+long long hash_func(void* point, int size)
+{
+    int const1 = 13;
+    int const2 = 41;
+
+    long long hash = 0;
+    point = (char*) point;
+
+    for (int i = 0; i < size; i++)
+    {
+        hash = (hash * const1 + (long long) *((char*)(point + i))) % const2;
+        //printf("%lld - HASHHHHHH\n", hash);
+    }
+
+    return hash;
 }
