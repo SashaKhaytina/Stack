@@ -31,7 +31,6 @@ typedef unsigned long long Canary_t;
 
 const size_t COP_START = 16; // Это вообще норм?
 const Canary_t CANARY = 0xDEFE0CE;
-// const unsigned long long POISON = 0xAB0BA;
 
 struct Stack
 {
@@ -112,8 +111,8 @@ int main()
 
     IF_OK(status) STACK_POP(&stack);
     IF_OK(status) STACK_POP(&stack);
-    IF_OK(status) STACK_POP(&stack);
-    IF_OK(status) stack_pop(&stack ON_DEBUG(___ __LINE__)); // compacity - 2, size - 18446744073709551615 (надо проверять на адекватный размер и соответствие с compacity)
+    //IF_OK(status) STACK_POP(&stack);
+    //IF_OK(status) stack_pop(&stack ON_DEBUG(___ __LINE__)); // compacity - 2, size - 18446744073709551615 (надо проверять на адекватный размер и соответствие с compacity)
 
     IF_OK(status) STACK_PUSH(&stack, 5);
     IF_OK(status) STACK_PUSH(&stack, 1);
@@ -126,22 +125,6 @@ int main()
     print_error(status); // Тут "крах системы" (цитата), если ранее не закаллочен
 }
 
-// Ее можно сделать, засунув "код main()" в функцию (а создавать внутри все равно default)
-
-// ProgramStatus stack_ctor(Stack* stack, StackElem_t* arr, size_t size, size_t compacity) // не работает для дураков, только для умных
-// {
-//     // если длина данного массива, compacity и size не соотносятся, будет лажа
-//     stack->size      = size;
-//     stack->compacity = compacity; // надо ли это вообще вводить? Или лучше рассчитывать из size
-
-//     stack->arr       = (StackElem_t*) realloc(stack->arr, compacity * sizeof(StackElem_t));
-//     // и кладем циклом.
-
-
-//     // Проверка на корректность
-//     return stack_assert(stack);
-// }
-
 
 ProgramStatus default_stack_ctor(Stack* stack)
 {
@@ -152,16 +135,6 @@ ProgramStatus default_stack_ctor(Stack* stack)
     stack->size      = 0;
     stack->compacity = COP_START;
     stack->arr       = (StackElem_t*) calloc(COP_START, sizeof(StackElem_t));
-    //stack->arr       = (StackElem_t*) poison_realloc(stack->arr, stack->size * sizeof(StackElem_t), COP_START * sizeof(StackElem_t));
-
-    // stack->arr[0] = CANARY;
-    // *(stack->arr + stack->compacity) = CANARY;
-
-
-    // printf("%d - *stack\n", sizeof(Stack));
-    // printf("%d - stack\n", (int*) stack);
-    // printf("%d - long long\n", sizeof(long long));
-    // printf("%d - hash func\n", hash_func(stack->arr, sizeof(StackElem_t) * (stack->size)));
 
     ON_DEBUG(stack->hash_stack = hash_func((void*) ((char*) stack + sizeof(long long)), sizeof(Stack) - 2 * sizeof(long long));)
     ON_DEBUG(stack->hash_arr = hash_func(stack->arr, (int) (sizeof(StackElem_t) * (stack->size)));)
@@ -235,19 +208,6 @@ ProgramStatus stack_assert(Stack* stack)
         return HASH_STACK_ERROR;
     }
 
-    // // Оно может быть не создано!
-    // if (stack->arr[0] != CANARY)
-    // {
-    //     print_stack_info(stack);
-    //     return CHANGE_LEFT_ARR_CANARY;
-    // }
-
-    // if (*(stack->arr + stack->compacity) != CANARY)
-    // {
-    //     print_stack_info(stack);
-    //     return CHANGE_RIGHT_ARR_CANARY;
-    // }
-
     if (stack->hash_arr != hash_func(stack->arr, (int)(sizeof(StackElem_t) * (stack->size))))
     {
         print_stack_info(stack);
@@ -271,48 +231,14 @@ void print_stack_info(Stack* stack)  // это в define?..
     printf("compacity - %lu\n", stack->compacity);
     printf("size - %lu\n", stack->size);
 
-    //ON_DEBUG(printf("left arr canary - %x\n", stack->arr[0]);)  //Почему если это раскомментить, то память утекает
-
     for (int i = (int) stack->size - 1; i >= 0; i--)
     {
         printf("arr[%d] = %f\n", i, stack->arr[i]);
     }
 
-    //ON_DEBUG(printf("right arr canary - %x\n", *(stack->arr + stack->compacity));)
-
     printf("\n\n");
 
 }
-
-// треш
-// void file_print_stack_info(Stack* stack)  // выводит dtor..........
-// {
-//     FILE* file = fopen("debug.txt", "w");  // норм ли это делать здесь? Ведь файл может не открыться, а это потенциальная ошибка
-//     if (file == NULL)
-//     {
-//         printf("Файл для дебага не открылся");
-//         return; // эм... но возвращать у этой функции ошибку - не очень.
-//     }
-
-//     ON_DEBUG(fprintf(file, "from main()::%d -- func - %s\n", stack->num_str_in_main, stack->name_current_func);)
-
-//     fprintf(file, "left canary - %x\n", stack->left_canary);
-//     fprintf(file, "right canary - %x\n", stack->right_canary);
-
-//     fprintf(file, "compacity - %lu\n", stack->compacity);
-//     fprintf(file, "size - %lu\n", stack->size);
-
-//     for (int i = (int) stack->size; i >= 1; i--)
-//     {
-//         fprintf(file, "arr[%d] = %f\n", i, stack->arr[i]);
-//     }
-
-//     fprintf(file, "\n\n");
-
-//     fclose(file); // всегда остается последняя запись
-
-// }
-
 
 
 ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(___ int num_str_in_main))
@@ -363,7 +289,7 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(___ int num_str_in_main))
     }
 
     ON_DEBUG(stack->hash_arr = hash_func(stack->arr, (int)(sizeof(StackElem_t) * (stack->size)));) // ЭТО ДОЛЖНО БЫТЬ РАНЬШЕ!!! НО ПОЧЕМУ???
-    ON_DEBUG(stack->hash_stack = hash_func((void*) ((char*)stack + sizeof(long long)), sizeof(Stack) - 2*sizeof(long long));)
+    ON_DEBUG(stack->hash_stack = hash_func((void*) ((char*)stack + sizeof(long long)), sizeof(Stack) - 2 * sizeof(long long));)
 
     print_stack_info(stack); // здесь не надо
 
@@ -436,8 +362,7 @@ long long hash_func(void* point, int size)
 
     for (int i = 0; i < size; i++)
     {
-        hash = (hash * const1 + (long long) *((char*)point + i)) % const2;
-        //printf("%lld - HASHHHHHH\n", hash);
+        hash = (hash * const1 + (long long) *((char*) point + i)) % const2;
     }
 
     return hash;
