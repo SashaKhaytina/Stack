@@ -35,9 +35,8 @@ ProgramStatus stack_dtor(Stack* stack)
 
     
     free((char*) stack->arr - sizeof(StackElem_t));     // Здесь чистить начиная с чего?
-    stack->size = 0;                                    // надо ли это? (для красоты вроде только)
-    stack->capacity = 1;
-
+    // stack->size = 0;                                    // надо ли это? (для красоты вроде только)
+    // stack->capacity = 1;
     return OK; // И у него всегда все ок! :)  ..???
 
 }
