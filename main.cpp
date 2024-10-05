@@ -28,17 +28,20 @@
 
 typedef double StackElem_t; // stack_elem_t
 typedef unsigned long long Canary_t; // canary_t
+typedef long long Hash_t;
 
 
 const size_t INITIAL_CAPACITY = 16; // Это вообще норм?
+
 const Canary_t CANARY = 0xDEFE0CE;
 const StackElem_t CANARY_ARR = 9999;
-const unsigned long long POISON = 0xAB0BA;
+//const unsigned long long POISON = 0xAB0BA;
+const StackElem_t POISON = 7;
 
 struct Stack
 {
-    ON_DEBUG(long long   hash_stack;)  // при передаче указателя, надо передавать указатель на канарейку, а размер без sizeof(long long)
-    ON_DEBUG(long long   hash_arr;)
+    ON_DEBUG(Hash_t   hash_stack;)  // при передаче указателя, надо передавать указатель на канарейку, а размер без sizeof(long long)
+    ON_DEBUG(Hash_t   hash_arr;)
     ON_DEBUG(Canary_t    left_canary =  CANARY;)
 
     StackElem_t* arr;
@@ -79,8 +82,8 @@ ProgramStatus stack_dtor           (Stack* stack);
 ProgramStatus stack_push           (Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string));
 ProgramStatus stack_pop            (Stack* stack  ON_DEBUG(, int code_num_string));
 
-long long     hash_func            (void* point, int size); // const void* data - ded wrote
-// void*         poison_realloc       (void* point, size_t old_size, size_t new_size);
+Hash_t        hash_func            (void* point, int size); // const void* data - ded wrote
+void*         poison_realloc       (void* point, size_t old_size, size_t new_size);
 
 
 // ХЕШ, вывод в файл, Unitest, warnings, !!!!Вывод нескольких ошибок!!!!
@@ -100,7 +103,7 @@ int main()
 
     //IF_OK(status) default_stack_ctor(&stack);
 
-    // status = default_stack_ctor(&stack); // TODO: change IF_OK to that, and it has to be none if debug was not defined
+    // status = default_stack_ctor(&stack); // TOD: change IF_OK to that, and it has to be none if debug was not defined
     // CHECK(status);
 
     //ON_DEBUG(CHECK(status) status =) STACK_PUSH(&stack, 5);
@@ -114,11 +117,15 @@ int main()
 
     //stack.size--;
     //stack.left_canary = 0xDED;
-    //stack.arr[0] = 9; 
-    //stack.arr[stack.capacity + 1] = 9; 
+    //stack.arr[-1] = 9; 
+    //stack.arr[stack.capacity] = 9; 
     //*(stack.arr + stack.capacity)=100;
 
-    //stack.arr[2] = 9; 
+    //stack.arr[2] = 90; // эта ошибка не ловится... Уже ловится!
+
+
+    status = STACK_PUSH(&stack, 3);
+    CHECK(status);
 
     status = STACK_POP(&stack);
     CHECK(status);
@@ -148,7 +155,7 @@ int main()
 }
 
 
-ProgramStatus default_stack_ctor(Stack* stack, size_t capacity) // TODO: you can pass capacity as function argument, but its not necessary
+ProgramStatus default_stack_ctor(Stack* stack, size_t capacity) // TOD: you can pass capacity as function argument, but its not necessary
 {
     // Здесь проверка на NULL
     ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;)
@@ -156,16 +163,21 @@ ProgramStatus default_stack_ctor(Stack* stack, size_t capacity) // TODO: you can
 
     stack->size     = 0;
     stack->capacity = capacity;
-    stack->arr      = (StackElem_t*) (calloc(capacity ON_DEBUG(+ 2), sizeof(StackElem_t)));
-    // char* a = (char*) calloc(capacity ON_DEBUG(+ 1), sizeof(StackElem_t));
-    // printf("%p - a\n", a);
-    // stack->arr      = (StackElem_t*) (a + sizeof(StackElem_t));
-    // printf("%p - stack->arr\n", stack->arr);
+    //stack->arr      = (StackElem_t*) (calloc(capacity ON_DEBUG(+ 2), sizeof(StackElem_t)));
+    //char* a = (char*) calloc(capacity ON_DEBUG(+ 2), sizeof(StackElem_t));
 
-    //ON_DEBUG(stack->arr[-1] = CANARY_ARR;) // TOD: use canary only in debug mode
-    ON_DEBUG(stack->arr[0] = CANARY_ARR;)
+    stack->arr      = (StackElem_t*) (((char*) poison_realloc(stack->arr, 0, (capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...
+
+    printf("%f - 111111\n", stack->arr[-1]);
+    ON_DEBUG(stack->arr[-1] = CANARY_ARR;) // TOD: use canary only in debug mode
+    printf("%f - 222222\n", stack->arr[-1]);
+
+    //print_stack_info(stack);
+
+    //ON_DEBUG(stack->arr[0] = CANARY_ARR;)
     //ON_DEBUG(*(stack->arr + stack->capacity) = CANARY;) 
-    ON_DEBUG(stack->arr[stack->capacity + 1] = CANARY_ARR;)
+//    printf("%f - 111111\n", stack->arr[stack->capacity]);
+    ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;)
 
 
     // printf("%d - *stack\n", sizeof(Stack));
@@ -173,13 +185,14 @@ ProgramStatus default_stack_ctor(Stack* stack, size_t capacity) // TODO: you can
     // printf("%d - long long\n", sizeof(long long));
     // printf("%d - hash func\n", hash_func(stack->arr, sizeof(StackElem_t) * (stack->size)));
 
-    ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(long long), sizeof(Stack) - 2 * sizeof(long long));) // TODO: sizeof(Canary_t), check this in all places in code
-    ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));)
+    ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->capacity));)
+    ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(Hash_t), sizeof(Stack) - sizeof(Hash_t));) // TODO: sizeof(Canary_t), check this in all places in code
+    //ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));)
 
     //print_stack_info(stack); // тут не надо
 
     // Проверка на корректность
-    //return stack_assert(stack); // TODO: wtf
+    //return stack_assert(stack); // TOD: wtf
     return OK; // у него всегда все ок! :)  ..???
 }
 
@@ -188,7 +201,7 @@ ProgramStatus stack_dtor(Stack* stack)
     ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;)
 
     
-    free(stack->arr);
+    free((char*) stack->arr - sizeof(StackElem_t));     // Здесь чистить начиная с чего?
     stack->size = 0;      // надо ли это? (для красоты вроде только)
     stack->capacity = 1;
 
@@ -235,26 +248,27 @@ ProgramStatus stack_assert(Stack* stack)
         return CHANGE_RIGHT_CANARY;
     }
 
-    if (stack->hash_stack != hash_func(((void*) stack + sizeof(long long)), sizeof(Stack) - 2 * sizeof(long long))) // тут адекватная запись... она работает что ли?
+    if (stack->hash_stack != hash_func(((void*) stack + sizeof(Hash_t)), sizeof(Stack) - sizeof(Hash_t))) // тут адекватная запись... она работает что ли?
     {
         print_stack_info(stack);
         return HASH_STACK_ERROR;
     }
 
     // Оно может быть не создано!
-    if (stack->arr[0] != CANARY_ARR)
+    if (stack->arr[-1] != CANARY_ARR)
     {
         print_stack_info(stack);
         return CHANGE_LEFT_ARR_CANARY;
     }
 
-    if (stack->arr[stack->capacity + 1] != CANARY_ARR)
+    if (stack->arr[stack->capacity] != CANARY_ARR)
     {
         print_stack_info(stack);
         return CHANGE_RIGHT_ARR_CANARY;
     }
 
-    if (stack->hash_arr != hash_func(stack->arr, sizeof(StackElem_t) * (stack->size)))
+    //if (stack->hash_arr != hash_func(stack->arr, sizeof(StackElem_t) * (stack->size))) // тут отлавливает только данные, без "POISON"
+    if (stack->hash_arr != hash_func(stack->arr, sizeof(StackElem_t) * (stack->capacity)))
     {
         print_stack_info(stack);
         return HASH_ARR_ERROR;
@@ -276,14 +290,16 @@ void print_stack_info(Stack* stack)
     printf("capacity - %lu\n", stack->capacity);
     printf("size - %lu\n", stack->size);
 
-    ON_DEBUG(printf("left arr canary - %f\n", stack->arr[0]);)
+    ON_DEBUG(printf("left arr canary - %f\n", stack->arr[-1]);)
 
-    for (int i = (int) stack->size; i >= 1; i--)
+    for (int i = (int) stack->size - 1; i >= 0; i--)
     {
-        printf("arr[%d] = %f\n", i-1, stack->arr[i]);
+        printf("arr[%d] = %f\n", i, stack->arr[i]);
     }
+    //printf("arr[%d] = %d - тут должен быть POISON\n", stack->size, stack->arr[stack->size]);
+    //printf("arr[%d] = %d - тут должен быть POISON\n", stack->size + 2, stack->arr[stack->size + 1]);
 
-    ON_DEBUG(printf("right arr canary - %f\n", stack->arr[stack->capacity + 1]);)
+    ON_DEBUG(printf("right arr canary - %f\n", stack->arr[stack->capacity]);)
 
     printf("\n\n");
 
@@ -302,21 +318,26 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_
     ON_DEBUG(stack->code_num_string = code_num_string;)
     ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;) // TOD: use macro __PRETTY_FUNCTION__
 
-    if (stack->size == stack->capacity - 1) // TODO: do that later, before pushing element // WHY - 1? (Без этого улетает с длинной массива)
+    if (stack->size == stack->capacity) // TOD: do that later, before pushing element // WHY - 1? (Без этого улетает с длинной массива) (не актуально вроде. Надо просто нормально делать вывод)
     {
+        //stack->arr = (StackElem_t*) poison_realloc((char*) stack->arr - sizeof(StackElem_t), stack->capacity, stack->capacity * 2 * sizeof(StackElem_t)); // Функцию переписать!
+
+        stack->arr      = (StackElem_t*) (((char*) poison_realloc((StackElem_t*) ((char*)stack->arr - sizeof(StackElem_t)), (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t), (2 * stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...
+
         stack->capacity *= 2;
-        stack->arr = (StackElem_t*) realloc(stack->arr, (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t)); // Функцию переписать!
         // TODO: do recalloc function
-        ON_DEBUG(stack->arr[stack->capacity + 1] = CANARY_ARR;) // TOD: also on debug mode
+        ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;) // TOD: also on debug mode
     }
  
     // TODO: проверь логику для size
-    stack->size += 1; // TODO: когда ты заходишь в функцию, size должен уже быть там, куда ты должна пушить новый элемент
+    //stack->size += 1; // TOD: когда ты заходишь в функцию, size должен уже быть там, куда ты должна пушить новый элемент
     stack->arr[stack->size] = elem;
-    //stack->size += 1; // TODO: правильно увеличивать size вот здесь, а не раньше
+    stack->size += 1; // TOD: правильно увеличивать size вот здесь, а не раньше
     
-    ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));)
-    ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(long long), sizeof(Stack) - 2 * sizeof(long long));)
+    //ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));)
+    ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->capacity));)
+
+    ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(Hash_t), sizeof(Stack) - sizeof(Hash_t));)
 
     print_stack_info(stack); // здесь не надо
 
@@ -335,20 +356,35 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
     ON_DEBUG(stack->code_num_string = code_num_string;)
     ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;)
 
-
     stack->size -= 1;
 
     if (stack->size <= (stack->capacity / 4)) // <= так как вдруг нечет
     {
-        stack->capacity /= 2; 
-        stack->arr = (StackElem_t*) realloc(stack->arr, (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t)); // Функцию переписать!
+        //stack->arr = (StackElem_t*) realloc(stack->arr, (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t)); // Функцию переписать!
 
-         ON_DEBUG(stack->arr[stack->capacity + 1] = CANARY_ARR;) // TOD: alse on debug mode
+        printf("%p - start\n", (StackElem_t*) ((char*)stack->arr - sizeof(StackElem_t)));
+        printf("%p - start\n", stack->arr[-1]);
+        
+
+        stack->arr = (StackElem_t*) (
+            ((char*) poison_realloc(
+                &(stack->arr[-1]), 
+                (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t), 
+                (stack->capacity / 2 ON_DEBUG(+ 2)) * sizeof(StackElem_t))) 
+            + sizeof(StackElem_t)); // Ёпсель-мопсель...
+
+        stack->capacity /= 2; 
+
+         ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;) // TOD: alse on debug mode
     }
 
-    ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));) // ЭТО ДОЛЖНО БЫТЬ РАНЬШЕ!!! НО ПОЧЕМУ???
-    ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(long long), sizeof(Stack) - 2*sizeof(long long));)
+    stack->arr[stack->size] = POISON; // тут может быть ошибка!!!
 
+    //ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));) // ЭТО ДОЛЖНО БЫТЬ РАНЬШЕ!!! НО ПОЧЕМУ???
+    ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->capacity));)
+    ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(Hash_t), sizeof(Stack) - sizeof(Hash_t));)
+
+    
     print_stack_info(stack); // здесь не надо
 
     return stack_assert(stack);
@@ -380,11 +416,11 @@ void print_error(ProgramStatus status)
         break;
     
     case CHANGE_LEFT_CANARY:
-        PRINTF_RED("Ошибка: Левая канарейка сдохла\n");
+        PRINTF_RED("Ошибка: Левая канарейка помЭрла\n");
         break;
     
     case CHANGE_RIGHT_CANARY:
-        PRINTF_RED("Ошибка: Правая канарейка сдохла\n");
+        PRINTF_RED("Ошибка: Правая канарейка помЭрла\n");
         break;
     
     case HASH_STACK_ERROR:
@@ -392,11 +428,11 @@ void print_error(ProgramStatus status)
         break;
     
     case CHANGE_LEFT_ARR_CANARY:
-        PRINTF_RED("Ошибка: Левая канарейка в массиве сдохла\n");
+        PRINTF_RED("Ошибка: Левая канарейка в массиве помЭрла\n");
         break;
     
     case CHANGE_RIGHT_ARR_CANARY:
-        PRINTF_RED("Ошибка: Правая канарейка в массиве сдохла\n");
+        PRINTF_RED("Ошибка: Правая канарейка в массиве помЭрла\n");
         break;
 
     case HASH_ARR_ERROR:
@@ -412,16 +448,23 @@ void print_error(ProgramStatus status)
 
 long long hash_func(void* point, int size)
 {
-    int const1 = 13;
-    int const2 = 41;
-
     long long hash = 0;
     point = (char*) point;
 
     for (int i = 0; i < size; i++)
     {
-        hash = (hash * const1 + (long long) *(((char*)point + i))) % const2;
+        hash += (long long) *((char*)point + i);
     }
+    // int const1 = 13;
+    // int const2 = 41;
+
+    // long long hash = 0;
+    // point = (char*) point;
+
+    // for (int i = 0; i < size; i++)
+    // {
+    //     hash = (hash * const1 + (long long) *(((char*)point + i))) % const2;
+    // }
 
     return hash;
 }
@@ -429,9 +472,21 @@ long long hash_func(void* point, int size)
 
 void* poison_realloc(void* point, size_t old_size, size_t new_size) // TODO: it doesn't work correctly because old_size can be bigger than new_size, check this
 {
+    printf("%p - point\n", point);
     // void* new_point = memcpy(realloc(point, new_size + 1), point, old_size);     // Копирует
-    void *new_point = realloc(point, new_size + 1);
-    memset((void*) ((char*) new_point + old_size), POISON, new_size - old_size); // Заполняет
+    if (old_size < new_size)
+    {
+        printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaa\n");
+        void *new_point = realloc(point, new_size);
+        // memset((void*) ((char*) new_point + old_size), POISON, new_size - old_size); // Заполняет но ТОЛЬКО 1 БАЙТ...
+        // for (int i = 0; i < (new_size - old_size); i+= sizeof(StackElem_t))
+        // {
+        //     *(StackElem_t*)((char*) new_point + old_size + i) = POISON;
+        // }
+        return new_point;
+    }
 
+    void *new_point = realloc(point, new_size);
+    //memset((void*) ((char*) new_point + old_size), POISON, new_size - old_size); // Это тут вообще не надо
     return new_point;
 }
