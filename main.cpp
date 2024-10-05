@@ -1,10 +1,12 @@
-#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #define ON_DEBUG(...) __VA_ARGS__
+#define CHECK(status) if (status){stack_assert(&stack); print_error(status); exit(status);}
 
 #else
-#define ON_DEBUG(code)
+#define ON_DEBUG(...)
+#define CHECK(status)
 
 #endif
 
@@ -21,7 +23,6 @@
 
 //#define IF_OK(status) if (!status) status = 
 
-#define CHECK(status) if (status){stack_assert(&stack); print_error(status); exit(status);}
 
 #define STACK_PUSH(stack, elem)  stack_push(stack, elem ON_DEBUG(, __LINE__))
 #define STACK_POP(stack)         stack_pop(stack ON_DEBUG(, __LINE__))
@@ -69,8 +70,6 @@ enum ProgramStatus {
 };
 
 
-// ProgramStatus stack_ctor(Stack* stack, StackElem_t* arr, size_t size, size_t capacity);
-
 ProgramStatus default_stack_ctor   (Stack* stack, size_t capacity);
 ProgramStatus stack_assert         (Stack* stack);
 void          print_stack_info     (Stack* stack);
@@ -96,17 +95,11 @@ int main()
     ON_DEBUG(printf("DEBUG включен!\n\n");)
 
 
-    ProgramStatus status = OK; // надо ли его оборачивать в ON_DEBUG?
+    ProgramStatus status = OK; 
 
     status = default_stack_ctor(&stack, INITIAL_CAPACITY);
     CHECK(status);
 
-    //IF_OK(status) default_stack_ctor(&stack);
-
-    // status = default_stack_ctor(&stack); // TOD: change IF_OK to that, and it has to be none if debug was not defined
-    // CHECK(status);
-
-    //ON_DEBUG(CHECK(status) status =) STACK_PUSH(&stack, 5);
     status = STACK_PUSH(&stack, 1);
     CHECK(status);
 
@@ -209,7 +202,8 @@ ProgramStatus stack_dtor(Stack* stack)
 
 }
 
-
+ON_DEBUG
+(
 ProgramStatus stack_assert(Stack* stack)
 {
     if (stack == NULL)
@@ -276,6 +270,7 @@ ProgramStatus stack_assert(Stack* stack)
 
     return OK;
 }
+)
 
 
 void print_stack_info(Stack* stack)
@@ -318,7 +313,7 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_
     ON_DEBUG(stack->code_num_string = code_num_string;)
     ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;) // TOD: use macro __PRETTY_FUNCTION__
 
-    if (stack->size == stack->capacity) // TOD: do that later, before pushing element // WHY - 1? (Без этого улетает с длинной массива) (не актуально вроде. Надо просто нормально делать вывод)
+    if (stack->size == stack->capacity - 1) // TOD: do that later, before pushing element // WHY - 1? (Без этого улетает с длинной массива) (не актуально вроде. Надо просто нормально делать вывод) (Актуально только без дебага...............)
     {
         //stack->arr = (StackElem_t*) poison_realloc((char*) stack->arr - sizeof(StackElem_t), stack->capacity, stack->capacity * 2 * sizeof(StackElem_t)); // Функцию переписать!
 
@@ -341,7 +336,8 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_
 
     print_stack_info(stack); // здесь не надо
 
-    return stack_assert(stack);
+    ON_DEBUG(return stack_assert(stack);)
+    return OK;
 }
 
 
@@ -350,8 +346,11 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_
 
 ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
 {
+    ON_DEBUG
+    (
     ProgramStatus stat = stack_assert(stack);
     if (stat) return stat;
+    )
 
     ON_DEBUG(stack->code_num_string = code_num_string;)
     ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;)
@@ -387,7 +386,8 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
     
     print_stack_info(stack); // здесь не надо
 
-    return stack_assert(stack);
+    ON_DEBUG(return stack_assert(stack);)
+    return OK;
 }
 
 
