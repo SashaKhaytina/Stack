@@ -13,7 +13,9 @@ ProgramStatus default_stack_ctor(Stack* stack, size_t capacity)
     stack->size     = 0;
     stack->capacity = capacity;
     //stack->arr      = (StackElem_t*) (calloc(capacity ON_DEBUG(+ 2), sizeof(StackElem_t)));
-    stack->arr      = (StackElem_t*) (((char*) poison_realloc(stack->arr, 0, (capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...
+    //stack->arr      = (StackElem_t*) (((char*) poison_realloc(stack->arr, 0, (capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...
+
+    stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(stack->arr, 0, capacity ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
 
     ON_DEBUG(stack->arr[-1]              = CANARY_ARR;) // TOD: use canary only in debug mode
     ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;)
@@ -156,7 +158,8 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_
     {
         //stack->arr = (StackElem_t*) poison_realloc((char*) stack->arr - sizeof(StackElem_t), stack->capacity, stack->capacity * 2 * sizeof(StackElem_t)); // Функцию переписать!
 
-        stack->arr       = (StackElem_t*) (((char*) poison_realloc((StackElem_t*) ((char*)stack->arr - sizeof(StackElem_t)), (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t), (2 * stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...
+        //stack->arr       = (StackElem_t*) (((char*) poison_realloc(&(stack->arr[-1]), (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t), (2 * stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
+        stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(&(stack->arr[-1]), stack->capacity ON_DEBUG(+ 2), 2 * stack->capacity ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
 
         stack->capacity *= 2;
         // TODO: do recalloc function
@@ -204,12 +207,15 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
         printf("%p - start\n", stack->arr[-1]);
         
 
-        stack->arr = (StackElem_t*) (
-            ((char*) poison_realloc(
-                &(stack->arr[-1]), 
-                (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t), 
-                (stack->capacity / 2 ON_DEBUG(+ 2)) * sizeof(StackElem_t))) 
-            + sizeof(StackElem_t)); // Ёпсель-мопсель...
+        // stack->arr = (StackElem_t*) (
+        //     ((char*) poison_realloc(
+        //         &(stack->arr[-1]), 
+        //         (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t), 
+        //         (stack->capacity / 2 ON_DEBUG(+ 2)) * sizeof(StackElem_t))) 
+        //     + sizeof(StackElem_t)); // Ёпсель-мопсель...
+
+        stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(&(stack->arr[-1]), stack->capacity ON_DEBUG(+ 2), 2 * stack->capacity ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
+
 
         stack->capacity /= 2; 
 
