@@ -10,7 +10,7 @@ Hash_t hash_func         (void* point, int size); // const void* data - ded wrot
 
 // Что-то одно надо оставить
 void*  poison_realloc    (void* point, size_t old_size, size_t new_size);
-void*  new_poison_realloc(void* point, size_t old_size, size_t new_size, size_t elem_type_size); 
+void*  new_poison_realloc(void* point, size_t old_size, size_t new_size); 
 
 
 #endif

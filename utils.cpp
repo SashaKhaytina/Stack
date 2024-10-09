@@ -48,10 +48,10 @@ void* poison_realloc(void* point, size_t old_size, size_t new_size)
 }
 
 
-void* new_poison_realloc(void* point, size_t old_size, size_t new_size, size_t elem_type_size)
+void* new_poison_realloc(void* point, size_t old_size, size_t new_size)
 {
-    old_size *= elem_type_size;
-    new_size *= elem_type_size;
+    // old_size *= elem_type_size;
+    // new_size *= elem_type_size;
 
     if (old_size < new_size)
     {

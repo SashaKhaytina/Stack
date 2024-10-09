@@ -17,10 +17,15 @@ ProgramStatus default_stack_ctor(Stack* stack, size_t capacity)
     //stack->arr      = (StackElem_t*) (calloc(capacity ON_DEBUG(+ 2), sizeof(StackElem_t)));
     //stack->arr      = (StackElem_t*) (((char*) poison_realloc(stack->arr, 0, (capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...
 
-    stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(stack->arr, 0, capacity ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
+    size_t real_new_size = capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t));
 
-    ON_DEBUG(stack->arr[-1]              = CANARY_ARR;) // TOD: use canary only in debug mode
-    ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;) // TODO: canary is not StackElem_t, it's Canary_t
+    // stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(stack->arr, 0, capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)), sizeof(StackElem_t))) + sizeof(Canary_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
+
+    stack->arr      = (StackElem_t*) (((char*) new_poison_realloc(stack->arr, 0, real_new_size)) + sizeof(Canary_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
+
+
+    ON_DEBUG(*(Canary_t*)((char*) stack->arr - sizeof(Canary_t))               = CANARY;) // TOD: use canary only in debug mode
+    ON_DEBUG(*(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * capacity) = CANARY;) // TODO: canary is not StackElem_t, it's Canary_t
 
     ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->capacity));)
     ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(Hash_t), sizeof(Stack) - sizeof(Hash_t));) // TODO: sizeof(Canary_t), check this in all places in code
@@ -98,13 +103,13 @@ ProgramStatus stack_assert(Stack* stack) // TODO: сделай битовыми 
     }
 
     // Оно может быть не создано!
-    if (stack->arr[-1] != CANARY_ARR)
+    if ((*(Canary_t*)((char*) stack->arr - sizeof(Canary_t))) != CANARY)
     {
         print_stack_info(stack);
         return CHANGE_LEFT_ARR_CANARY;
     }
 
-    if (stack->arr[stack->capacity] != CANARY_ARR)
+    if (*(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * stack->capacity) != CANARY)
     {
         print_stack_info(stack);
         return CHANGE_RIGHT_ARR_CANARY;
@@ -134,7 +139,7 @@ void print_stack_info(Stack* stack) // TOO: where is assert? (теперь не 
     printf("capacity - %lu\n", stack->capacity);
     printf("size - %lu\n", stack->size);
 
-    ON_DEBUG(printf("left arr canary - %f\n", stack->arr[-1]);)
+    ON_DEBUG(printf("left arr canary - %x\n", (*(Canary_t*)((char*) stack->arr - sizeof(Canary_t))));)
 
     for (int i = (int) stack->size - 1; i >= 0; i--)
     {
@@ -143,7 +148,7 @@ void print_stack_info(Stack* stack) // TOO: where is assert? (теперь не 
     printf("arr[%d] = %d - тут должен быть POISON\n", stack->size, stack->arr[stack->size]);
     //printf("arr[%d] = %d - тут должен быть POISON\n", stack->size + 2, stack->arr[stack->size + 1]);
 
-    ON_DEBUG(printf("right arr canary - %f\n", stack->arr[stack->capacity]);)
+    ON_DEBUG(printf("right arr canary - %x\n", *(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * stack->capacity));)
 
     printf("\n\n");
 
@@ -168,10 +173,11 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_
         //stack->arr = (StackElem_t*) poison_realloc((char*) stack->arr - sizeof(StackElem_t), stack->capacity, stack->capacity * 2 * sizeof(StackElem_t)); // Функцию переписать!
 
         //stack->arr       = (StackElem_t*) (((char*) poison_realloc(&(stack->arr[-1]), (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t), (2 * stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
-        stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(&(stack->arr[-1]), stack->capacity ON_DEBUG(+ 2), 2 * stack->capacity ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
+        stack->arr       = (StackElem_t*) (((char*) new_poison_realloc((((char*) stack->arr - sizeof(Canary_t))), stack->capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)), 2 * stack->capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)))) + sizeof(Canary_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
 
         stack->capacity *= 2;
-        ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;)
+        //ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;)
+        ON_DEBUG(*(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * stack->capacity)  = CANARY;)
     }
  
     stack->arr[stack->size] = elem;
@@ -215,8 +221,8 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
     {
         //stack->arr = (StackElem_t*) realloc(stack->arr, (stack->capacity ON_DEBUG(+ 2)) * sizeof(StackElem_t)); // Функцию переписать!
 
-        printf("%p - start\n", (StackElem_t*) ((char*)stack->arr - sizeof(StackElem_t)));
-        printf("%p - start\n", stack->arr[-1]);
+        // printf("%p - start\n", (StackElem_t*) ((char*)stack->arr - sizeof(StackElem_t)));
+        // printf("%p - start\n", stack->arr[-1]);
         
 
         // stack->arr = (StackElem_t*) (
@@ -226,12 +232,13 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
         //         (stack->capacity / 2 ON_DEBUG(+ 2)) * sizeof(StackElem_t))) 
         //     + sizeof(StackElem_t)); // Ёпсель-мопсель...
 
-        stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(&(stack->arr[-1]), stack->capacity ON_DEBUG(+ 2), stack->capacity / 2 ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // TOD: new size is incorrect // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
+        stack->arr       = (StackElem_t*) (((char*) new_poison_realloc((((char*) stack->arr - sizeof(Canary_t))), stack->capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)), stack->capacity / 2 * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)))) + sizeof(StackElem_t)); // TOD: new size is incorrect // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
 
 
         stack->capacity /= 2; 
 
-         ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;)
+        // ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;)
+        ON_DEBUG(*(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * stack->capacity)  = CANARY;)
     }
 
     stack->arr[stack->size] = POISON; // тут может быть ошибка!!! ?

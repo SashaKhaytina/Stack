@@ -40,7 +40,7 @@ int main()
 
     //stack.size--;
     //stack.left_canary = 0xDED;
-    //stack.arr[-1] = 9; 
+    // stack.arr[-1] = 9; 
     //stack.arr[stack.capacity] = 9; 
     //*(stack.arr + stack.capacity)=100;
 
