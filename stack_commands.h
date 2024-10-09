@@ -23,6 +23,11 @@
 #define STACK_PUSH(stack, elem)  stack_push(stack, elem ON_DEBUG(, __LINE__))
 #define STACK_POP(stack)         stack_pop(stack ON_DEBUG(, __LINE__))
 
+#define CHECK_STACK_INFO ProgramStatus stat = stack_assert(stack);\
+                         if (stat) return stat;\
+                         stack->code_num_string = code_num_string;\
+                         stack->name_current_func = __PRETTY_FUNCTION__;
+
 
 typedef double StackElem_t;          // stack_elem_t
 typedef unsigned long long Canary_t; // canary_t
@@ -30,7 +35,7 @@ typedef unsigned long long Canary_t; // canary_t
 const Canary_t CANARY = 0xDEFE0CE;
 const StackElem_t CANARY_ARR = 9999;
 //const unsigned long long POISON = 0xAB0BA;
-const StackElem_t POISON = 7;
+const StackElem_t POISON = 1234;
 
 struct Stack
 {

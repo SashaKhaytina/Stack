@@ -2,6 +2,7 @@
 #include <malloc.h>
 
 #include "utils.h"
+//#include "stack_commands.h" // ыыыыы
 
 long long hash_func(void* point, int size)
 {
@@ -28,7 +29,7 @@ long long hash_func(void* point, int size)
 
 
 // С ядом все плохо :(
-void* poison_realloc(void* point, size_t old_size, size_t new_size) // TODO: it doesn't work correctly because old_size can be bigger than new_size, check this
+void* poison_realloc(void* point, size_t old_size, size_t new_size)
 {
     if (old_size < new_size)
     {
@@ -47,7 +48,7 @@ void* poison_realloc(void* point, size_t old_size, size_t new_size) // TODO: it 
 }
 
 
-void* new_poison_realloc(void* point, size_t old_size, size_t new_size, size_t elem_type_size) // TODO: it doesn't work correctly because old_size can be bigger than new_size, check this
+void* new_poison_realloc(void* point, size_t old_size, size_t new_size, size_t elem_type_size)
 {
     old_size *= elem_type_size;
     new_size *= elem_type_size;
@@ -55,10 +56,16 @@ void* new_poison_realloc(void* point, size_t old_size, size_t new_size, size_t e
     if (old_size < new_size)
     {
         void *new_point = realloc(point, new_size);
+        // printf("%p - new_point\n", new_point);
         // memset((void*) ((char*) new_point + old_size), POISON, new_size - old_size); // Заполняет но ТОЛЬКО 1 БАЙТ...
-        // for (int i = 0; i < (new_size - old_size); i+= sizeof(StackElem_t))
+        
+        // Тут везде долежн быть не double, а StackElem_t
+
+        // for (int i = 0; i < (new_size - old_size); i += sizeof(double))
         // {
-        //     *(StackElem_t*)((char*) new_point + old_size + i) = POISON;
+        //     printf("AAAAAAAAAAAAA\n");
+        //     printf("%p - (double*)(((char*) new_point) + old_size + i)\n", (double*)(((char*) new_point) + old_size + i));
+        //     *(double*)(((char*) new_point) + old_size + i) = 1234; // TODO: not StackElem_t, it's elem_type_size
         // }
         return new_point;
     }

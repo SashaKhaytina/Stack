@@ -6,7 +6,9 @@
 
 ProgramStatus default_stack_ctor(Stack* stack, size_t capacity)
 {
-    // Здесь проверка на NULL
+    // Здесь проверка на NULL // TOD: 
+    if (stack == NULL) return STACK_NULL;
+
     ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;)
 
 
@@ -18,7 +20,7 @@ ProgramStatus default_stack_ctor(Stack* stack, size_t capacity)
     stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(stack->arr, 0, capacity ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
 
     ON_DEBUG(stack->arr[-1]              = CANARY_ARR;) // TOD: use canary only in debug mode
-    ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;)
+    ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;) // TODO: canary is not StackElem_t, it's Canary_t
 
     ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->capacity));)
     ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(Hash_t), sizeof(Stack) - sizeof(Hash_t));) // TODO: sizeof(Canary_t), check this in all places in code
@@ -45,19 +47,25 @@ ProgramStatus stack_dtor(Stack* stack)
 
 ON_DEBUG
 (
-ProgramStatus stack_assert(Stack* stack)
+ProgramStatus stack_assert(Stack* stack) // TODO: сделай битовыми операциями
 {
     if (stack == NULL)
     {
-        print_stack_info(stack);
+        //print_stack_info(stack); // TOD: wtf 
         return STACK_NULL;
     }
 
     if (stack->arr == NULL)
     {
-        print_stack_info(stack);
+        //print_stack_info(stack);
         return STACK_ARR_NULL;
     }
+
+    // if ((stack->size == 0) && (stack->name_current_func == "ProgramStatus stack_pop(Stack*, int)"))
+    // {
+    //     print_stack_info(stack);
+    //     return INCORRECT_POP;
+    // }
 
     if (stack->size > stack->capacity) // размер больше максимального
     {
@@ -114,7 +122,7 @@ ProgramStatus stack_assert(Stack* stack)
 )
 
 
-void print_stack_info(Stack* stack)
+void print_stack_info(Stack* stack) // TOO: where is assert? (теперь не нужен)
 {
     ON_DEBUG(printf("from main()::%d -- func - %s\n", stack->code_num_string, stack->name_current_func);)
     ON_DEBUG(printf("hash_stack - %lld\n", stack->hash_stack);)
@@ -132,7 +140,7 @@ void print_stack_info(Stack* stack)
     {
         printf("arr[%d] = %f\n", i, stack->arr[i]);
     }
-    //printf("arr[%d] = %d - тут должен быть POISON\n", stack->size, stack->arr[stack->size]);
+    printf("arr[%d] = %d - тут должен быть POISON\n", stack->size, stack->arr[stack->size]);
     //printf("arr[%d] = %d - тут должен быть POISON\n", stack->size + 2, stack->arr[stack->size + 1]);
 
     ON_DEBUG(printf("right arr canary - %f\n", stack->arr[stack->capacity]);)
@@ -145,16 +153,17 @@ void print_stack_info(Stack* stack)
 
 ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string))
 {
-    ON_DEBUG
-    (
-    ProgramStatus stat = stack_assert(stack);
-    if (stat) return stat;
-    )
+    // ON_DEBUG
+    // (
+    // ProgramStatus stat = stack_assert(stack);
+    // if (stat) return stat;
+    // )
 
-    ON_DEBUG(stack->code_num_string = code_num_string;)
-    ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;) 
+    // ON_DEBUG(stack->code_num_string = code_num_string;)
+    // ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;) 
+    ON_DEBUG(CHECK_STACK_INFO)
 
-    if (stack->size == stack->capacity - 1) // TOD: do that later, before pushing element // WHY - 1? (Без этого улетает с длинной массива) (не актуально вроде. Надо просто нормально делать вывод) (Актуально только без дебага...............)
+    if (stack->size == stack->capacity) // TOD: just stack->size == stack->capacity // TOD: do that later, before pushing element // WHY - 1? (Без этого улетает с длинной массива) (не актуально вроде. Надо просто нормально делать вывод) (Актуально только без дебага...............) (Проблема решилась...)
     {
         //stack->arr = (StackElem_t*) poison_realloc((char*) stack->arr - sizeof(StackElem_t), stack->capacity, stack->capacity * 2 * sizeof(StackElem_t)); // Функцию переписать!
 
@@ -162,14 +171,11 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_
         stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(&(stack->arr[-1]), stack->capacity ON_DEBUG(+ 2), 2 * stack->capacity ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
 
         stack->capacity *= 2;
-        // TODO: do recalloc function
         ON_DEBUG(stack->arr[stack->capacity] = CANARY_ARR;)
     }
  
-    // TODO: проверь логику для size
-    //stack->size += 1; // TOD: когда ты заходишь в функцию, size должен уже быть там, куда ты должна пушить новый элемент
     stack->arr[stack->size] = elem;
-    stack->size += 1; // TOD: правильно увеличивать size вот здесь, а не раньше
+    stack->size += 1; 
     
     //ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->size));)
     ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->capacity));)
@@ -188,14 +194,20 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_
 
 ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
 {
-    ON_DEBUG
-    (
-    ProgramStatus stat = stack_assert(stack);
-    if (stat) return stat;
-    )
+    // // TOD: macro CHECK_STACK_INFO
+    // ON_DEBUG
+    // (
+    // ProgramStatus stat = stack_assert(stack);
+    // if (stat) return stat;
+    // )
 
-    ON_DEBUG(stack->code_num_string = code_num_string;)
-    ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;)
+    // ON_DEBUG(stack->code_num_string = code_num_string;)
+    // ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;)
+
+    ON_DEBUG(CHECK_STACK_INFO)
+
+    // TOD: check if when you want to pop, your size isn't equal to 0
+    if (stack->size == 0) return INCORRECT_POP; // См попытку сделать это в assert
 
     stack->size -= 1;
 
@@ -214,7 +226,7 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
         //         (stack->capacity / 2 ON_DEBUG(+ 2)) * sizeof(StackElem_t))) 
         //     + sizeof(StackElem_t)); // Ёпсель-мопсель...
 
-        stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(&(stack->arr[-1]), stack->capacity ON_DEBUG(+ 2), 2 * stack->capacity ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
+        stack->arr       = (StackElem_t*) (((char*) new_poison_realloc(&(stack->arr[-1]), stack->capacity ON_DEBUG(+ 2), stack->capacity / 2 ON_DEBUG(+ 2), sizeof(StackElem_t))) + sizeof(StackElem_t)); // TOD: new size is incorrect // Ёпсель-мопсель...  стоит передать sizeof(StackElem_t) и прописывать это все в функции...? 
 
 
         stack->capacity /= 2; 

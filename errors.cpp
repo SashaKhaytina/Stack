@@ -50,6 +50,10 @@ void print_error(ProgramStatus status)
         PRINTF_RED("Ошибка: Ошибка хэша массива\n");
         break;
     
+    case INCORRECT_POP:
+        PRINTF_RED("Ошибка: Хотите попнуть, но в стеке ничего нет. Не много ли хотите???\n");
+        break;
+    
     default:
         PRINTF_GREEN("Программа завершила работу без ошибок\n");
         break;

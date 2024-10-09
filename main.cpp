@@ -27,6 +27,9 @@ int main()
     status = default_stack_ctor(&stack, INITIAL_CAPACITY);
     CHECK(status);
 
+    // status = STACK_POP(&stack);
+    // CHECK(status);
+
     status = STACK_PUSH(&stack, 1);
     CHECK(status);
 

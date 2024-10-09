@@ -158,13 +158,12 @@ ProgramStatus stack_dtor(Stack* stack)
 
 }
 
-
 // Тут же не надо assert... Зачем вообще где-либо делать assert?
-ProgramStatus stack_assert(Stack* stack)
+ProgramStatus stack_assert(Stack* stack) // TODO: сделай битовыми операциями
 {
-    if (stack == NULL)
+    if (stack == NULL) 
     {
-        print_stack_info(stack);
+        print_stack_info(stack); // TODO: wtf 
         return STACK_NULL;
     }
 

@@ -16,7 +16,8 @@ enum ProgramStatus {
     HASH_STACK_ERROR, 
     HASH_ARR_ERROR, 
     CHANGE_LEFT_ARR_CANARY,
-    CHANGE_RIGHT_ARR_CANARY
+    CHANGE_RIGHT_ARR_CANARY,
+    INCORRECT_POP
 };
 
 void print_error (ProgramStatus status);
