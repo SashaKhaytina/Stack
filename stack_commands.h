@@ -1,8 +1,6 @@
 #ifndef STACK_COMMANDS
 #define STACK_COMMANDS
 
-// #define DEBUG
-
 
 #ifdef DEBUG
 #define ON_DEBUG(...) __VA_ARGS__
@@ -23,8 +21,8 @@
 #define STACK_PUSH(stack, elem)  stack_push(stack, elem ON_DEBUG(, __LINE__))
 #define STACK_POP(stack)         stack_pop(stack ON_DEBUG(, __LINE__))
 
-#define CHECK_STACK_INFO Error_t stat = stack_assert(stack);\
-                         if (stat) return stat;\
+#define CHECK_STACK_INFO Error_t status = stack_assert(stack);\
+                         if (status) return status;\
                          stack->code_num_string = code_num_string;\
                          stack->name_current_func = __PRETTY_FUNCTION__;
 

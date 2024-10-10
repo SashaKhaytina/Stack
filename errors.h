@@ -22,8 +22,8 @@ enum ProgramStatus {
     INCORRECT_POP = 4096
 };
 
-// void print_error (ProgramStatus status);
 void print_all_errors(Error_t status);
+// void print_error (ProgramStatus status);
 
 
 #endif

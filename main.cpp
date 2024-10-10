@@ -12,8 +12,6 @@
 
 const size_t INITIAL_CAPACITY = 16; 
 
-// ХЕШ, вывод в файл, Unitest, warnings, !!!!Вывод нескольких ошибок!!!!
-// ЧТО ДЕЛАТЬ В ФАЙЛОМ ??? (ГДЕ ОТКРЫВАТЬ)
 
 int main()
 {
