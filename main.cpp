@@ -22,7 +22,7 @@ int main()
     ON_DEBUG(printf("DEBUG включен!\n\n");)
 
 
-    ProgramStatus status = OK; 
+    Error_t status = 0; 
 
     status = default_stack_ctor(&stack, INITIAL_CAPACITY);
     CHECK(status);
@@ -40,7 +40,7 @@ int main()
 
     //stack.size--;
     //stack.left_canary = 0xDED;
-    // stack.arr[-1] = 9; 
+    //stack.arr[-1] = 9; 
     //stack.arr[stack.capacity] = 9; 
     //*(stack.arr + stack.capacity)=100;
 
@@ -70,5 +70,6 @@ int main()
 
     stack_dtor(&stack);
 
-    print_error(status); // Тут "крах системы" (цитата), если ранее не закаллочен
+    //print_error(status); // Тут "крах системы" (цитата), если ранее не закаллочен
+    print_all_errors(status);
 }

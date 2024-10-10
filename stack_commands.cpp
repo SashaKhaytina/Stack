@@ -4,7 +4,7 @@
 #include "stack_commands.h"
 
 
-ProgramStatus default_stack_ctor(Stack* stack, size_t capacity)
+Error_t default_stack_ctor(Stack* stack, size_t capacity)
 {
     // Здесь проверка на NULL // TOD: 
     if (stack == NULL) return STACK_NULL;
@@ -35,10 +35,11 @@ ProgramStatus default_stack_ctor(Stack* stack, size_t capacity)
 
     // Проверка на корректность
     //return stack_assert(stack); // TOD: wtf
-    return OK; // у него всегда все ок! :)  ..???
+    //return OK; // у него всегда все ок! :)  ..???
+    return 0;
 }
 
-ProgramStatus stack_dtor(Stack* stack)
+Error_t stack_dtor(Stack* stack)
 {
     ON_DEBUG(stack->name_current_func = __PRETTY_FUNCTION__;)
 
@@ -46,24 +47,32 @@ ProgramStatus stack_dtor(Stack* stack)
     free((char*) stack->arr - sizeof(StackElem_t));     // Здесь чистить начиная с чего?
     // stack->size = 0;                                    // надо ли это? (для красоты вроде только)
     // stack->capacity = 1;
-    return OK; // И у него всегда все ок! :)  ..???
+    //return OK; // И у него всегда все ок! :)  ..???
+    return 0;
 
 }
 
 ON_DEBUG
 (
-ProgramStatus stack_assert(Stack* stack) // TODO: сделай битовыми операциями
+Error_t stack_assert(Stack* stack) // TODO: сделай битовыми операциями
 {
+    Error_t all_errors = 0;
+
     if (stack == NULL)
     {
+        //printf("AAAAAAAAAA1\n");
         //print_stack_info(stack); // TOD: wtf 
-        return STACK_NULL;
+        all_errors += STACK_NULL;
+        //return STACK_NULL;
     }
 
     if (stack->arr == NULL)
     {
+        //printf("AAAAAAAAAA2\n");
+
         //print_stack_info(stack);
-        return STACK_ARR_NULL;
+        all_errors += STACK_ARR_NULL;
+        //return STACK_ARR_NULL;
     }
 
     // if ((stack->size == 0) && (stack->name_current_func == "ProgramStatus stack_pop(Stack*, int)"))
@@ -74,55 +83,74 @@ ProgramStatus stack_assert(Stack* stack) // TODO: сделай битовыми 
 
     if (stack->size > stack->capacity) // размер больше максимального
     {
-        print_stack_info(stack);
-        return SIZE_MORE_COMPASITY;
+        //printf("AAAAAAAAAA3\n");
+        //print_stack_info(stack);
+        all_errors += SIZE_MORE_COMPASITY;
+        //return SIZE_MORE_COMPASITY;
     }
 
     if (stack->capacity > 200000) // Надо ли делать проверку на большое size_t (подозрительно, не переполнение ли?)
     {
-        print_stack_info(stack);
-        return TOO_LARGE_COMPASITY;
+        //printf("AAAAAAAAAA4\n");
+        all_errors += TOO_LARGE_COMPASITY;
+        //print_stack_info(stack);
+        //return TOO_LARGE_COMPASITY;
     }
 
     if (stack->left_canary != CANARY)
     {
-        print_stack_info(stack);
-        return CHANGE_LEFT_CANARY;
+        //printf("AAAAAAAAAA5\n");
+        all_errors += CHANGE_LEFT_CANARY;
+        //print_stack_info(stack);
+        //return CHANGE_LEFT_CANARY;
     }
 
     if (stack->right_canary != CANARY)
-    {
-        print_stack_info(stack);
-        return CHANGE_RIGHT_CANARY;
+    {   
+        //printf("AAAAAAAAAA6\n");
+        all_errors += CHANGE_RIGHT_CANARY;
+        //print_stack_info(stack);
+        //return CHANGE_RIGHT_CANARY;
     }
 
     if (stack->hash_stack != hash_func(((void*) stack + sizeof(Hash_t)), sizeof(Stack) - sizeof(Hash_t))) // тут адекватная запись... она работает что ли?
     {
-        print_stack_info(stack);
-        return HASH_STACK_ERROR;
+        //printf("AAAAAAAAAA7\n");
+        all_errors += HASH_STACK_ERROR;
+        //print_stack_info(stack);
+        //return HASH_STACK_ERROR;
     }
 
     // Оно может быть не создано!
     if ((*(Canary_t*)((char*) stack->arr - sizeof(Canary_t))) != CANARY)
     {
-        print_stack_info(stack);
-        return CHANGE_LEFT_ARR_CANARY;
+        //printf("AAAAAAAAAA8\n");
+        all_errors += CHANGE_LEFT_ARR_CANARY;
+        //print_stack_info(stack);
+        //return CHANGE_LEFT_ARR_CANARY;
     }
 
     if (*(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * stack->capacity) != CANARY)
     {
-        print_stack_info(stack);
-        return CHANGE_RIGHT_ARR_CANARY;
+        //printf("AAAAAAAAAA9\n");
+        all_errors += CHANGE_RIGHT_ARR_CANARY;
+        //print_stack_info(stack);
+        //return CHANGE_RIGHT_ARR_CANARY;
     }
 
     //if (stack->hash_arr != hash_func(stack->arr, sizeof(StackElem_t) * (stack->size))) // тут отлавливает только данные, без "POISON"
     if (stack->hash_arr != hash_func(stack->arr, sizeof(StackElem_t) * (stack->capacity)))
     {
-        print_stack_info(stack);
-        return HASH_ARR_ERROR;
+        all_errors += HASH_ARR_ERROR;
+        //print_stack_info(stack);
+        //return HASH_ARR_ERROR;
     }
 
-    return OK;
+    
+    if (all_errors != 0)
+        print_stack_info(stack);
+
+    return all_errors;
 }
 )
 
@@ -156,7 +184,7 @@ void print_stack_info(Stack* stack) // TOO: where is assert? (теперь не 
 }
 
 
-ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string))
+Error_t stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string))
 {
     // ON_DEBUG
     // (
@@ -188,17 +216,17 @@ ProgramStatus stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_
 
     ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(Hash_t), sizeof(Stack) - sizeof(Hash_t));)
 
-    print_stack_info(stack); // здесь не надо
+    //print_stack_info(stack); // здесь не надо
 
     ON_DEBUG(return stack_assert(stack);)
-    return OK;
+    return 0;
 }
 
 
 
 
 
-ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
+Error_t stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
 {
     // // TOD: macro CHECK_STACK_INFO
     // ON_DEBUG
@@ -248,7 +276,7 @@ ProgramStatus stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
     ON_DEBUG(stack->hash_stack = hash_func((void*) stack + sizeof(Hash_t), sizeof(Stack) - sizeof(Hash_t));)
 
     
-    print_stack_info(stack); // здесь не надо
+    //print_stack_info(stack); // здесь не надо
 
     ON_DEBUG(return stack_assert(stack);)
     return OK;

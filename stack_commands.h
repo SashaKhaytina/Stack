@@ -6,7 +6,7 @@
 
 #ifdef DEBUG
 #define ON_DEBUG(...) __VA_ARGS__
-#define CHECK(status) if (status){stack_assert(&stack); print_error(status); exit(status);}
+#define CHECK(status) if (status){stack_assert(&stack); print_all_errors(status); exit(status);}
 
 #else
 #define ON_DEBUG(...)
@@ -23,7 +23,7 @@
 #define STACK_PUSH(stack, elem)  stack_push(stack, elem ON_DEBUG(, __LINE__))
 #define STACK_POP(stack)         stack_pop(stack ON_DEBUG(, __LINE__))
 
-#define CHECK_STACK_INFO ProgramStatus stat = stack_assert(stack);\
+#define CHECK_STACK_INFO Error_t stat = stack_assert(stack);\
                          if (stat) return stat;\
                          stack->code_num_string = code_num_string;\
                          stack->name_current_func = __PRETTY_FUNCTION__;
@@ -53,12 +53,12 @@ struct Stack
 };
 
 
-ProgramStatus default_stack_ctor   (Stack* stack, size_t capacity);
-ProgramStatus stack_dtor           (Stack* stack);
-ProgramStatus stack_push           (Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string));
-ProgramStatus stack_pop            (Stack* stack  ON_DEBUG(, int code_num_string));
-ProgramStatus stack_assert         (Stack* stack);
-void          print_stack_info     (Stack* stack);
+Error_t default_stack_ctor   (Stack* stack, size_t capacity);
+Error_t stack_dtor           (Stack* stack);
+Error_t stack_push           (Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string));
+Error_t stack_pop            (Stack* stack  ON_DEBUG(, int code_num_string));
+Error_t stack_assert         (Stack* stack);
+void    print_stack_info     (Stack* stack);
 
 
 #endif
