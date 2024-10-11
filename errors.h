@@ -7,19 +7,19 @@
 typedef unsigned long long Error_t;
 
 enum ProgramStatus {
-    OK,
-    STACK_NULL = 2, 
-    STACK_ARR_NULL = 4,
-    SIZE_MORE_COMPASITY = 8, 
-    TOO_LARGE_COMPASITY = 16,
-    NO_OPENING_FILE = 32,
-    CHANGE_RIGHT_CANARY = 64, 
-    CHANGE_LEFT_CANARY = 128, 
-    HASH_STACK_ERROR = 256, 
-    HASH_ARR_ERROR = 512, 
-    CHANGE_LEFT_ARR_CANARY = 1024,
-    CHANGE_RIGHT_ARR_CANARY = 2048,
-    INCORRECT_POP = 4096
+    OK = 0,
+    STACK_NULL = 1 << 1, 
+    STACK_ARR_NULL = 1 << 2,
+    SIZE_MORE_CAPASITY = 1 << 3, 
+    TOO_LARGE_CAPASITY = 1 << 4,
+    NO_OPENING_FILE = 1 << 5,
+    CHANGE_RIGHT_CANARY = 1 << 6, 
+    CHANGE_LEFT_CANARY = 1 << 7, 
+    HASH_STACK_ERROR = 1 << 8, 
+    HASH_ARR_ERROR = 1 << 9, 
+    CHANGE_LEFT_ARR_CANARY = 1 << 10,
+    CHANGE_RIGHT_ARR_CANARY = 1 << 11,
+    INCORRECT_POP = 1 << 12
 };
 
 void print_all_errors(Error_t status);

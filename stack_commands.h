@@ -39,7 +39,7 @@ struct Stack
 {
     ON_DEBUG(Hash_t   hash_stack;)  // при передаче указателя, надо передавать указатель на канарейку, а размер без sizeof(long long)
     ON_DEBUG(Hash_t   hash_arr;)
-    ON_DEBUG(Canary_t    left_canary =  CANARY;)
+    ON_DEBUG(Canary_t left_canary =  CANARY;)
 
     StackElem_t* arr;
     size_t       size;
@@ -56,7 +56,9 @@ Error_t stack_dtor           (Stack* stack);
 Error_t stack_push           (Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string));
 Error_t stack_pop            (Stack* stack  ON_DEBUG(, int code_num_string));
 Error_t stack_assert         (Stack* stack);
-void    print_stack_info     (Stack* stack);
+void    print_stack_info     (Stack* stack, Error_t status);
+void    stack_realloc        (Stack* stack, size_t new_size);
+
 
 
 #endif

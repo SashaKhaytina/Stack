@@ -40,11 +40,11 @@ void print_all_errors(Error_t status)
                 PRINTF_RED("Ошибка: нулевой указатель на массив стека\n");
                 break;
             
-            case SIZE_MORE_COMPASITY:
+            case SIZE_MORE_CAPASITY:
                 PRINTF_RED("Ошибка: размер массива больше его максимального размера (скорее всего \"отрицательный\" size)\n");
                 break;
             
-            case TOO_LARGE_COMPASITY:
+            case TOO_LARGE_CAPASITY:
                 PRINTF_RED("Ошибка: Массив превысил максимальный размер\n");
                 break;
             
