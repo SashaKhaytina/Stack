@@ -51,7 +51,7 @@ Error_t stack_assert(Stack* stack)
 
     if (stack == NULL)
     { 
-        all_errors |= STACK_NULL; // TODO: при такой ошибке не нужно проверять остальное
+        all_errors |= STACK_NULL;
         return all_errors;
     }
 
@@ -59,7 +59,7 @@ Error_t stack_assert(Stack* stack)
     {
         all_errors |= STACK_ARR_NULL;
         return all_errors;
-        // TODO: сделать через логическое или
+
     }
 
     // if ((stack->size == 0) && (stack->name_current_func == "ProgramStatus stack_pop(Stack*, int)"))
@@ -70,7 +70,7 @@ Error_t stack_assert(Stack* stack)
 
     if (stack->size > stack->capacity)
     {
-        all_errors |= SIZE_MORE_CAPASITY; // TODO: wtf is compasity
+        all_errors |= SIZE_MORE_CAPASITY;
     }
 
     if (stack->capacity > 200000)
@@ -119,7 +119,7 @@ Error_t stack_assert(Stack* stack)
 )
 
 
-void print_stack_info(Stack* stack, Error_t status) // TOO: where is assert? (теперь не нужен) // TODO: вообще тут нужно выдавать если была ошибка, или если ее не было
+void print_stack_info(Stack* stack, Error_t status)
 {
     ON_DEBUG(print_all_errors(status);)
 
@@ -216,54 +216,45 @@ Error_t stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
 }
 
 
-void stack_realloc(Stack* stack, size_t new_size) // TODO: rename to stack_realloc, params of function: void*, size_t old_capacity, size_t new_capacity
+void stack_realloc(Stack* stack, size_t new_size)
 {
-    //printf("%d - new_size start \n", new_size);
-    new_size        = new_size        * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t));
-    //printf("%d - new_size finish \n", new_size);
+    new_size        = new_size * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t));
     size_t old_size = 0;
 
     StackElem_t* point = NULL;
     
     if(stack->arr == NULL)
     {
-        //printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
         point = stack->arr;
     }
     else 
     {
-        //printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
         point = (StackElem_t*) (ON_DEBUG((char*) )stack->arr ON_DEBUG(- sizeof(Canary_t)));
         old_size = stack->capacity * sizeof(StackElem_t) ON_DEBUG(+ sizeof(Canary_t));
     }
 
-    //printf("%d - old size \n", old_size);
 
     if (old_size < new_size ON_DEBUG(- sizeof(Canary_t)))
     {
-        //point = (StackElem_t*) ((char*) realloc(point, new_size) ON_DEBUG(+ sizeof(Canary_t)));
-
         point = (StackElem_t*) realloc(point, new_size);
 
         for (int i = 0; i < (new_size - old_size ON_DEBUG(- sizeof(Canary_t))); i += sizeof(StackElem_t))
         {
-            *(StackElem_t*)(((char*) point) + old_size + i) = POISON; // TODO: not StackElem_t, it's elem_type_size
+            *(StackElem_t*)(((char*) point) + old_size + i) = POISON;
         }
         
         stack->arr = (StackElem_t*) (ON_DEBUG((char*) )point ON_DEBUG(+ sizeof(Canary_t)));
 
+
         if (old_size != 0) stack->capacity *= 2;
         else {ON_DEBUG(*(Canary_t*)((char*) stack->arr - sizeof(Canary_t)) = CANARY;)}
-
-        //printf("%d - capacity\n", stack->capacity);
-
 
         ON_DEBUG(*(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * stack->capacity)  = CANARY;)
 
     }
     else
     {
-        stack->arr = (StackElem_t*) ((char*) realloc(point, new_size) ON_DEBUG(+ sizeof(Canary_t))); // TODO: тут ты не кладешь в конец канарейки
+        stack->arr = (StackElem_t*) ((char*) realloc(point, new_size) ON_DEBUG(+ sizeof(Canary_t)));
 
         stack->capacity /= 2;
         ON_DEBUG(*(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * stack->capacity)  = CANARY;)

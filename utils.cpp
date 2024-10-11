@@ -2,7 +2,7 @@
 #include <malloc.h>
 
 #include "utils.h"
-//#include "stack_commands.h" 
+
 
 long long hash_func(void* point, int size)
 {
@@ -28,7 +28,6 @@ long long hash_func(void* point, int size)
 }
 
 
-// С ядом все плохо :(
 void* poison_realloc(void* point, size_t old_size, size_t new_size)
 {
     if (old_size < new_size)
@@ -48,7 +47,18 @@ void* poison_realloc(void* point, size_t old_size, size_t new_size)
 }
 
 
-// void* new_poison_realloc(void* point, size_t old_size, size_t new_size) // TODO: rename to stack_realloc, params of function: void*, size_t old_capacity, size_t new_capacity
+
+
+
+
+
+
+
+
+
+
+
+// void* new_poison_realloc(void* point, size_t old_size, size_t new_size) // TOD: rename to stack_realloc, params of function: void*, size_t old_capacity, size_t new_capacity
 // {
 //     // old_size *= elem_type_size;
 //     // new_size *= elem_type_size;
@@ -65,17 +75,17 @@ void* poison_realloc(void* point, size_t old_size, size_t new_size)
 //         {
 //             //printf("AAAAAAAAAAAAA\n");
 //             //printf("%p - (double*)(((char*) new_point) + old_size + i)\n", (double*)(((char*) new_point) + old_size + i));
-//             *(StackElem_t*)(((char*) new_point) + old_size + i) = 1234; // TODO: not StackElem_t, it's elem_type_size
+//             *(StackElem_t*)(((char*) new_point) + old_size + i) = 1234; 
 //         }
 //         return new_point;
 //     }
 
-//     void *new_point = realloc(point, new_size); // TODO: тут ты не кладешь в конец канарейки
+//     void *new_point = realloc(point, new_size); // TOD: тут ты не кладешь в конец канарейки
 //     return new_point;
 // }
 
 
-// void new_poison_realloc(Stack* stack, size_t new_size) // TODO: rename to stack_realloc, params of function: void*, size_t old_capacity, size_t new_capacity
+// void new_poison_realloc(Stack* stack, size_t new_size) // TOD: rename to stack_realloc, params of function: void*, size_t old_capacity, size_t new_capacity
 // {
 //     new_size        = new_size        * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t));
 //     size_t old_size = 0;
@@ -99,7 +109,7 @@ void* poison_realloc(void* point, size_t old_size, size_t new_size)
 
 //         for (int i = 0; i < (new_size - old_size ON_DEBUG(- sizeof(Canary_t))); i += sizeof(StackElem_t))
 //         {
-//             *(StackElem_t*)(((char*) point) + old_size + i) = POISON; // TODO: not StackElem_t, it's elem_type_size
+//             *(StackElem_t*)(((char*) point) + old_size + i) = POISON; // TOD: not StackElem_t, it's elem_type_size
 //         }
         
 //         stack->arr = point ON_DEBUG(+ sizeof(Canary_t));
@@ -111,20 +121,12 @@ void* poison_realloc(void* point, size_t old_size, size_t new_size)
 //     }
 //     else
 //     {
-//         stack->arr = (StackElem_t*) realloc(point, new_size) ON_DEBUG(+ sizeof(Canary_t)); // TODO: тут ты не кладешь в конец канарейки
+//         stack->arr = (StackElem_t*) realloc(point, new_size) ON_DEBUG(+ sizeof(Canary_t)); // TOD: тут ты не кладешь в конец канарейки
 
 //         stack->capacity /= 2;
 //         ON_DEBUG(*(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * stack->capacity)  = CANARY;)
 //     }
 
 
-
-
-
-
-
-
-
-
-//     //stack->arr = (StackElem_t*) realloc(stack->arr, new_size); // TODO: тут ты не кладешь в конец канарейки
+//     //stack->arr = (StackElem_t*) realloc(stack->arr, new_size); // TOD: тут ты не кладешь в конец канарейки
 // }

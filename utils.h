@@ -2,7 +2,6 @@
 #define UTILS
 
 #include <stdio.h>
-//#include "stack_commands.h"
 
 
 typedef long long Hash_t;
