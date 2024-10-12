@@ -25,7 +25,7 @@ int main()
     status |= default_stack_ctor(&stack, INITIAL_CAPACITY);
     CHECK(status);
 
-    // status |= STACK_POP(&stack); // ошибка хэша?
+    // status |= STACK_POP(&stack);
     // CHECK(status);
 
     status |= STACK_PUSH(&stack, 1);
@@ -44,7 +44,7 @@ int main()
     //stack.arr[stack.capacity] = 9; 
     //*(stack.arr + stack.capacity)=100;
 
-    //stack.arr[2] = 90; // эта ошибка не ловится... Уже ловится!
+    //stack.arr[2] = 90;
 
 
     status |= STACK_PUSH(&stack, 3);
@@ -77,6 +77,5 @@ int main()
 
     stack_dtor(&stack);
 
-    //print_error(status); // Тут "крах системы" (цитата), если ранее не закаллочен
     print_all_errors(status);
 }

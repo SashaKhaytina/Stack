@@ -23,7 +23,6 @@ enum ProgramStatus {
 };
 
 void print_all_errors(Error_t status);
-// void print_error (ProgramStatus status);
 
 
 #endif
