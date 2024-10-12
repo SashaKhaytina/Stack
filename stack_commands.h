@@ -4,11 +4,21 @@
 
 #ifdef DEBUG
 #define ON_DEBUG(...) __VA_ARGS__
-#define CHECK(status) if (status){stack_assert(&stack); print_all_errors(status); exit(status);}
+#define CHECK(status) if (status){stack_assert(&stack); print_all_errors(status); exit((int) status);}
+#define PRINT_STACK
 
+#define CHECK_STACK_INFO Error_t status = stack_assert(stack);\
+                         if (status) return status;
 #else
 #define ON_DEBUG(...)
 #define CHECK(status)
+#define CHECK_STACK_INFO
+#define PRINT_STACK\
+    for (int i = (int) stack.size - 1; i >= 0; i--)\
+    {\
+        printf("arr[%d] = %f\n", i, stack.arr[i]);\
+    }\
+    printf("\n");
 
 #endif
 
@@ -20,11 +30,6 @@
 
 #define STACK_PUSH(stack, elem)  stack_push(stack, elem ON_DEBUG(, __LINE__))
 #define STACK_POP(stack)         stack_pop(stack ON_DEBUG(, __LINE__))
-
-#define CHECK_STACK_INFO Error_t status = stack_assert(stack);\
-                         if (status) return status;\
-                         stack->code_num_string = code_num_string;\
-                         stack->name_current_func = __PRETTY_FUNCTION__;
 
 
 typedef double StackElem_t;          // stack_elem_t
@@ -51,13 +56,15 @@ struct Stack
 };
 
 
-Error_t default_stack_ctor   (Stack* stack, size_t capacity);
-Error_t stack_dtor           (Stack* stack);
-Error_t stack_push           (Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string));
-Error_t stack_pop            (Stack* stack  ON_DEBUG(, int code_num_string));
-Error_t stack_assert         (Stack* stack);
-void    print_stack_info     (Stack* stack, Error_t status);
-void    stack_realloc        (Stack* stack, size_t new_size);
+Error_t default_stack_ctor(Stack* stack, size_t capacity);
+Error_t stack_dtor        (Stack* stack);
+Error_t stack_push        (Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string));
+Error_t stack_pop         (Stack* stack  ON_DEBUG(, int code_num_string));
+Error_t stack_assert      (Stack* stack);
+void    print_stack_info  (Stack* stack, Error_t status);
+void    stack_realloc     (Stack* stack, size_t new_size);
+void    stack_memset      (StackElem_t* point, size_t old_size, size_t new_size);
+
 
 
 

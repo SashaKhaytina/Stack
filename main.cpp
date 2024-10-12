@@ -22,19 +22,21 @@ int main()
 
     Error_t status = 0; 
 
-    status = default_stack_ctor(&stack, INITIAL_CAPACITY);
+    status |= default_stack_ctor(&stack, INITIAL_CAPACITY);
     CHECK(status);
 
-    // status = STACK_POP(&stack);
+    // status |= STACK_POP(&stack); // ошибка хэша?
     // CHECK(status);
 
-    status = STACK_PUSH(&stack, 1);
+    status |= STACK_PUSH(&stack, 1);
     CHECK(status);
+    PRINT_STACK
 
     //stack.right_canary = 0xDEDEAD;
 
-    status = STACK_PUSH(&stack, 3);
+    status |= STACK_PUSH(&stack, 3);
     CHECK(status);
+    PRINT_STACK
 
     //stack.size--;
     //stack.left_canary = 0xDED;
@@ -45,26 +47,33 @@ int main()
     //stack.arr[2] = 90; // эта ошибка не ловится... Уже ловится!
 
 
-    status = STACK_PUSH(&stack, 3);
+    status |= STACK_PUSH(&stack, 3);
     CHECK(status);
+    PRINT_STACK
 
-    status = STACK_POP(&stack);
+    status |= STACK_POP(&stack);
     CHECK(status);
+    PRINT_STACK
 
-    status = STACK_POP(&stack);
+    status |= STACK_POP(&stack);
     CHECK(status);
+    PRINT_STACK
 
-    status = STACK_PUSH(&stack, 5);
+    status |= STACK_PUSH(&stack, 5);
     CHECK(status);
+    PRINT_STACK
 
-    status = STACK_PUSH(&stack, 1);
+    status |= STACK_PUSH(&stack, 1);
     CHECK(status);
+    PRINT_STACK
 
-    status = STACK_PUSH(&stack, 3);
+    status |= STACK_PUSH(&stack, 3);
     CHECK(status);
+    PRINT_STACK
     
-    status = STACK_PUSH(&stack, 10);
+    status |= STACK_PUSH(&stack, 10);
     CHECK(status);
+    PRINT_STACK
 
     stack_dtor(&stack);
 

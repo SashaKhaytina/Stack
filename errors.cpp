@@ -16,7 +16,7 @@ void print_all_errors(Error_t status)
     
     for (int i = len - 1; i >= 0; i--)
     {
-        Error_t step_2 = pow(2, i);
+        Error_t step_2 = (Error_t) pow(2, i);
 
         if (status >= step_2)
         {
@@ -27,7 +27,7 @@ void print_all_errors(Error_t status)
 
     for (int i = 0; i < len; i++)
     {
-        Error_t step_2 = pow(2, i);
+        Error_t step_2 = (Error_t) pow(2, i);
         if (bin_num[i] == 1)
         {
             switch (step_2)
@@ -40,11 +40,11 @@ void print_all_errors(Error_t status)
                 PRINTF_RED("Ошибка: нулевой указатель на массив стека\n");
                 break;
             
-            case SIZE_MORE_CAPASITY:
+            case SIZE_MORE_CAPACITY:
                 PRINTF_RED("Ошибка: размер массива больше его максимального размера (скорее всего \"отрицательный\" size)\n");
                 break;
             
-            case TOO_LARGE_CAPASITY:
+            case TOO_LARGE_CAPACITY:
                 PRINTF_RED("Ошибка: Массив превысил максимальный размер\n");
                 break;
             
