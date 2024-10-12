@@ -75,6 +75,22 @@ int main()
     CHECK(status);
     PRINT_STACK
 
+    status |= STACK_PUSH(&stack, 10);
+    CHECK(status);
+    PRINT_STACK
+
+    status |= STACK_PUSH(&stack, 10);
+    CHECK(status);
+    PRINT_STACK
+
+    status |= STACK_PUSH(&stack, 10);
+    CHECK(status);
+    PRINT_STACK
+
+    status |= STACK_PUSH(&stack, 10);
+    CHECK(status);
+    PRINT_STACK
+
     stack_dtor(&stack);
 
     print_all_errors(status);
