@@ -14,7 +14,7 @@ Error_t default_stack_ctor(Stack* stack, size_t capacity)
 
     stack->arr = (StackElem_t*) (ON_DEBUG((char*) )calloc(capacity, sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)/capacity)) ON_DEBUG(+ sizeof(Canary_t)));
 
-    stack_memset(stack->arr, 0, capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)));
+    stack_memset(stack->arr ON_DEBUG(+ sizeof(Canary_t)), 0, capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)));
 
     ON_DEBUG(*(Canary_t*)((char*) stack->arr - sizeof(Canary_t)) = CANARY;)
     ON_DEBUG(*(Canary_t*)((char*) stack->arr + sizeof(StackElem_t) * stack->capacity)  = CANARY;)
@@ -189,16 +189,12 @@ Error_t stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
 
 void stack_realloc(Stack* stack, size_t new_size) 
 {
-    new_size        = new_size * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t));
-    size_t old_size = 0;
+    new_size        = new_size        * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t));
+    size_t old_size = stack->capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t));
 
-    StackElem_t* point = NULL;
+    StackElem_t* point = (StackElem_t*) (ON_DEBUG((char*) )stack->arr ON_DEBUG(- sizeof(Canary_t)));
 
-    point = (StackElem_t*) (ON_DEBUG((char*) )stack->arr ON_DEBUG(- sizeof(Canary_t)));
-    old_size = stack->capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t));
-
-
-
+    
     if (old_size < new_size)
     {
         point = (StackElem_t*) realloc(point, new_size);
