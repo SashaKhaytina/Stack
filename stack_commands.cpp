@@ -12,6 +12,12 @@ Error_t default_stack_ctor(Stack* stack, size_t capacity)
     stack->size     = 0;
     stack->capacity = capacity;
 
+    // #ifndef DEBUG
+    //     stack->arr = (StackElem_t*) calloc (capacity, sizeof(StackElem_t));
+    // #else
+    //     stack->arr = (StackElem_t*) ((char*) calloc (capacity * sizeof(StackElem_t) + 2 * sizeof(Canary_t), sizeof(char)) + sizeof(Canary_t));
+    // #endif
+
     stack->arr = (StackElem_t*) (ON_DEBUG((char*) )calloc(capacity, sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)/capacity)) ON_DEBUG(+ sizeof(Canary_t)));
 
     stack_memset(stack->arr, 0 ON_DEBUG(+ sizeof(Canary_t)), capacity * sizeof(StackElem_t) ON_DEBUG(+ 2 * sizeof(Canary_t)));
@@ -59,7 +65,7 @@ Error_t stack_assert(Stack* stack)
         all_errors |= SIZE_MORE_CAPACITY;
     }
 
-    if (stack->capacity > 200000)
+    if (stack->capacity > MAX_CAPACITY)
     {
         all_errors |= TOO_LARGE_CAPACITY;
     }
@@ -148,7 +154,6 @@ Error_t stack_push(Stack* stack, StackElem_t elem ON_DEBUG(, int code_num_string
     ON_DEBUG(stack->hash_stack = hash_func((void*) ((char*) stack + sizeof(Hash_t)), sizeof(Stack) - sizeof(Hash_t));)
 
     ON_DEBUG(status = stack_assert(stack);)
-    ON_DEBUG(print_stack_info(stack, status);) // TODO: delete
 
     ON_DEBUG(return status;)
     return 0;
@@ -172,14 +177,12 @@ Error_t stack_pop(Stack* stack  ON_DEBUG(, int code_num_string))
         stack_realloc(stack, stack->capacity / 2);
     }
 
-    stack->arr[stack->size] = POISON; // тут может быть ошибка?
+    stack->arr[stack->size] = POISON; 
 
     ON_DEBUG(stack->hash_arr = hash_func(stack->arr, sizeof(StackElem_t) * (stack->capacity));)
     ON_DEBUG(stack->hash_stack = hash_func((void*) ((char*) stack + sizeof(Hash_t)), sizeof(Stack) - sizeof(Hash_t));)
 
     ON_DEBUG(status = stack_assert(stack);)
-    ON_DEBUG(print_stack_info(stack, status);)
-
 
     ON_DEBUG(return status;)
     return 0;

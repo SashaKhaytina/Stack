@@ -14,7 +14,7 @@ void print_all_errors(Error_t status)
     int len = sizeof(Error_t) * 8;
     int bin_num[sizeof(Error_t) * 8] = {};
     
-    for (int i = len - 1; i >= 0; i--)
+    for (int i = len - 1; i >= 0; i--) // TODO: можно проще
     {
         Error_t step_2 = (Error_t) pow(2, i);
 

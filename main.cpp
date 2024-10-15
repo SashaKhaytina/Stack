@@ -28,7 +28,7 @@ int main()
     // status |= STACK_POP(&stack);
     // CHECK(status);
 
-    status |= STACK_PUSH(&stack, 1);
+    status |= STACK_PUSH(&stack, 1); // TODO: why |=
     CHECK(status);
     PRINT_STACK
 

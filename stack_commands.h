@@ -38,6 +38,7 @@ typedef unsigned long long Canary_t;
 const Canary_t CANARY = 0xDEFE0CE;
 const StackElem_t CANARY_ARR = 9999;
 const StackElem_t POISON = 1234;
+const size_t MAX_CAPACITY = 200000;
 
 struct Stack
 {
